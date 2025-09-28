@@ -434,17 +434,18 @@ Rate: 1.0449967801462194
 Requests: HTTP for Humans
 Kenneth Reitz
 https://docs.python-requests.org/
-Библиотека для выполнения HTTP-запросов к API сервису.
+- Библиотека для выполнения HTTP-запросов к API сервису.
 
 Docker Documentation
 Docker, Inc.
 https://docs.docker.com/
-Документация по запуску и управлению контейнерами Docker.
+- Документация по запуску и управлению контейнерами Docker.
 
 JSON.org
 Тим Брэй и др.
 https://www.json.org/
-Спецификация формата JSON для сериализации данных.
+- Спецификация формата JSON для сериализации данных.
+
 
 
 
