@@ -50,6 +50,9 @@ lab02/
 python currency_exchange_rate.py USD EUR 2025-01-01
 ```
 
+<img width="1773" height="583" alt="image" src="https://github.com/user-attachments/assets/88b619a2-1b1c-4921-90a8-53888d349771" />
+
+
 #### Сохранение данных в JSON формате
 - Данные сохраняются в папку `data/`
 - Автоматическое создание директории при необходимости
@@ -136,10 +139,16 @@ Rate: 1.0449967801462194
 curl "http://localhost:8080/?currencies" -X POST -d "key=myapi123"
 # Ответ: {"error":"","data":["MDL","USD","EUR","RON","RUS","UAH"]}
 
+<img width="1788" height="168" alt="image" src="https://github.com/user-attachments/assets/e7760afd-0f33-4f0e-931e-d6ceb510378d" />
+
+
 # Курс обмена
 curl "http://localhost:8080/?from=USD&to=EUR&date=2025-01-01" -X POST -d "key=myapi123"
 # Ответ: {"error":"","data":{"from":"USD","to":"EUR","rate":1.0449967801462194,"date":"2025-01-01"}}
 ```
+
+<img width="1779" height="173" alt="image" src="https://github.com/user-attachments/assets/38ae2da3-143d-4633-8a27-3443193a34a7" />
+
 
 ### Обработка ошибок:
 ```bash
@@ -147,10 +156,16 @@ curl "http://localhost:8080/?from=USD&to=EUR&date=2025-01-01" -X POST -d "key=my
 curl "http://localhost:8080/?currencies" -X POST -d "key=wrongkey"
 # Ответ: {"error":"Invalid API key","data":[]}
 
+<img width="1783" height="173" alt="image" src="https://github.com/user-attachments/assets/35ace343-c7db-4213-b697-3806dc550940" />
+
+
 # Неверная валюта
 curl "http://localhost:8080/?from=XXX&to=YYY&date=2025-01-01" -X POST -d "key=myapi123"
 # Ответ: {"error":"The currency XXX is unknown","data":[]}
 ```
+
+<img width="1778" height="169" alt="image" src="https://github.com/user-attachments/assets/0be9d601-fabe-4b53-9919-9b97e576c088" />
+
 
 ## 🚀 Запуск проекта
 
@@ -167,8 +182,15 @@ pip install requests
 ### Запуск API
 ```bash
 cd IW02-Creating_a_Python_Script_to_Interact_with_an_API\lab02prep
+cp sample.env .env
 docker-compose up -d
 ```
+
+`cd IW02-Creating_a_Python_Script_to_Interact_with_an_API\lab02prep` - переход в папку с сервисом.
+
+`cp sample.env .env` - создается рабочий файл настроек из шаблона, чтобы Docker знал, какой API-ключ использовать.Нужно не забыть указать свой ключ.
+
+`docker compose up -d` — поднимает все сервисы из файла docker-compose.yaml и запустить их в фоне. 
 
 ## 📈 Статус выполнения
 
@@ -188,3 +210,4 @@ docker-compose up -d
 - Полностью соответствует требованиям задания
 
 **Проект готов к сдаче.** ✅
+
