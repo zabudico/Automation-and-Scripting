@@ -113,6 +113,83 @@ python currency_exchange_rate.py USD EUR 2025-01-01
 | 5 | 2025-07-20 | USD → EUR | 50 дней |
 | 6 | 2025-09-08 | MDL → USD | 50 дней |
 
+
+```bash
+# 1. Неверная валюта (должна записаться в error.log)
+python currency_exchange_rate.py XXX USD 2025-01-01
+
+# 2. Неверная дата (должна записаться в error.log)  
+python currency_exchange_rate.py USD EUR 2024-12-31
+
+# 3. Неверный формат даты (должна записаться в error.log)
+python currency_exchange_rate.py USD EUR 2025/01/01
+
+# 4. Одинаковые валюты (должна записаться в error.log)
+python currency_exchange_rate.py USD USD 2025-01-01
+
+# 5. Успешный запрос
+python currency_exchange_rate.py USD EUR 2025-01-01
+```
+
+<img width="1405" height="224" alt="image" src="https://github.com/user-attachments/assets/7e633884-1391-460c-9994-37b57ea530cf" />
+
+
+```bash
+
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>python currency_exchange_rate.py XXX USD 2025-01-01
+=== Currency Exchange Rate Script ===
+Parameters: XXX -> USD on 2025-01-01
+Supported currencies: MDL, USD, EUR, RON, RUS, UAH
+
+2025-09-28 21:28:50,578 - ERROR - Invalid source currency: XXX. Available: ['MDL', 'USD', 'EUR', 'RON', 'RUS', 'UAH']
+[ERROR] Invalid source currency: XXX. Available: ['MDL', 'USD', 'EUR', 'RON', 'RUS', 'UAH']
+
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>python currency_exchange_rate.py USD EUR 2024-12-31
+=== Currency Exchange Rate Script ===
+Parameters: USD -> EUR on 2024-12-31
+Supported currencies: MDL, USD, EUR, RON, RUS, UAH
+
+2025-09-28 21:28:54,782 - ERROR - Date 2024-12-31 is out of range. Must be between 2025-01-01 and 2025-09-15
+[ERROR] Date 2024-12-31 is out of range. Must be between 2025-01-01 and 2025-09-15
+
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>python currency_exchange_rate.py USD EUR 2025/01/01
+=== Currency Exchange Rate Script ===
+Parameters: USD -> EUR on 2025/01/01
+Supported currencies: MDL, USD, EUR, RON, RUS, UAH
+
+2025-09-28 21:28:57,198 - ERROR - Invalid date format: 2025/01/01. Use YYYY-MM-DD
+[ERROR] Invalid date format: 2025/01/01. Use YYYY-MM-DD
+
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>python currency_exchange_rate.py USD USD 2025-01-01
+=== Currency Exchange Rate Script ===
+Parameters: USD -> USD on 2025-01-01
+Supported currencies: MDL, USD, EUR, RON, RUS, UAH
+
+2025-09-28 21:29:03,646 - ERROR - Source and target currencies cannot be the same: USD
+[ERROR] Source and target currencies cannot be the same: USD
+
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>python currency_exchange_rate.py USD EUR 2025-01-01
+=== Currency Exchange Rate Script ===
+Parameters: USD -> EUR on 2025-01-01
+Supported currencies: MDL, USD, EUR, RON, RUS, UAH
+
+Requesting rate: USD -> EUR for 2025-01-01
+
+=== Exchange Rate ===
+From: USD
+To: EUR
+Date: 2025-01-01
+Rate: 1.0449967801462194
+[SUCCESS] Data saved to: data\USD_EUR_2025-01-01.json
+
+[SUCCESS] Operation completed successfully!
+
+C:\Users\User\Desktop\Automation-and-Scripting\lab02>
+
+```
+
+
 ### ✅ Документация
 Создан файл `readme.md` с описанием:
 - Установка зависимостей (`pip install requests`)
@@ -348,6 +425,7 @@ Rate: 1.0449967801462194
 ## Вывод 
 
 В ходе выполения работы, я ознакомился с тем, как взаимодействовать с Web API с помощью скрипта Python, освежил в памяти, как поднимать контейнеры, работать с API, писать код для этих задач. Считаю данную лабораторную работу полезной для собственного развития, как разработчика.:)
+
 
 
 
