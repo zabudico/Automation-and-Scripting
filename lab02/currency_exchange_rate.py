@@ -1,186 +1,220 @@
-#!/usr/bin/env python3
+
 """
 Currency Exchange Rate Script
-Gets exchange rates from local API and saves to JSON files
+Interacts with local API to get currency exchange rates for specified dates.
 """
 
 import requests
 import json
 import sys
-import argparse
-from datetime import datetime, timedelta
 import os
 import logging
+from datetime import datetime
+from argparse import ArgumentParser
 
-# Configuration
-BASE_URL = "http://localhost:8080"
+
+# Конфигурация
+API_BASE_URL = "http://localhost:8080/"
 API_KEY = "myapi123"
+SUPPORTED_CURRENCIES = ["MDL", "USD", "EUR", "RON", "RUS", "UAH"]
+DATA_DIR = "data"
+
 
 def setup_logging():
-    """Setup error logging"""
+    """Настройка системы логирования ошибок"""
     logging.basicConfig(
-        filename='error.log',
         level=logging.ERROR,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('error.log', encoding='utf-8'),
+            logging.StreamHandler(sys.stderr)
+        ]
     )
 
-def create_data_directory():
-    """Create data directory if it doesn't exist"""
-    if not os.path.exists('data'):
-        os.makedirs('data')
 
 def validate_date(date_string):
-    """Validate date format and range"""
+    """Валидация даты и проверка диапазона"""
     try:
         date_obj = datetime.strptime(date_string, '%Y-%m-%d')
-        
-        # Check date range
         start_date = datetime(2025, 1, 1)
         end_date = datetime(2025, 9, 15)
         
         if not (start_date <= date_obj <= end_date):
-            raise ValueError(f"Date must be between 2025-01-01 and 2025-09-15")
-            
-        return date_string
-    except ValueError as e:
-        raise ValueError(f"Invalid date: {date_string}. Use YYYY-MM-DD format. {e}")
+            error_msg = f"Date {date_string} is out of range. Must be between 2025-01-01 and 2025-09-15"
+            logging.error(error_msg)
+            print(f"[ERROR] {error_msg}")
+            return False
+        return True
+    except ValueError:
+        error_msg = f"Invalid date format: {date_string}. Use YYYY-MM-DD"
+        logging.error(error_msg)
+        print(f"[ERROR] {error_msg}")
+        return False
 
-def get_available_currencies():
-    """Get list of available currencies from API"""
-    try:
-        response = requests.post(
-            f"{BASE_URL}/?currencies",
-            data={"key": API_KEY},
-            timeout=10
-        )
-        response.raise_for_status()
-        data = response.json()
-        
-        if data.get('error'):
-            raise Exception(f"API Error: {data['error']}")
-            
-        return data['data']
-    except Exception as e:
-        print(f"Warning: Could not fetch available currencies: {e}")
-        return ['USD', 'EUR', 'MDL', 'RON', 'RUS', 'UAH']  # Fallback
 
 def validate_currencies(from_currency, to_currency):
-    """Validate currency codes"""
-    available_currencies = get_available_currencies()
+    """Проверка поддерживаемых валют"""
+    if from_currency not in SUPPORTED_CURRENCIES:
+        error_msg = f"Invalid source currency: {from_currency}. Available: {SUPPORTED_CURRENCIES}"
+        logging.error(error_msg)
+        print(f"[ERROR] {error_msg}")
+        return False
     
-    if from_currency not in available_currencies:
-        raise ValueError(f"Invalid source currency: {from_currency}. Available: {available_currencies}")
+    if to_currency not in SUPPORTED_CURRENCIES:
+        error_msg = f"Invalid target currency: {to_currency}. Available: {SUPPORTED_CURRENCIES}"
+        logging.error(error_msg)
+        print(f"[ERROR] {error_msg}")
+        return False
     
-    if to_currency not in available_currencies:
-        raise ValueError(f"Invalid target currency: {to_currency}. Available: {available_currencies}")
+    if from_currency == to_currency:
+        error_msg = f"Source and target currencies cannot be the same: {from_currency}"
+        logging.error(error_msg)
+        print(f"[ERROR] {error_msg}")
+        return False
+    
+    return True
+
 
 def get_exchange_rate(from_currency, to_currency, date):
-    """Get exchange rate from API"""
+    """Получение курса валют от API"""
+    api_url = f"{API_BASE_URL}?from={from_currency}&to={to_currency}&date={date}"
+    payload = {"key": API_KEY}
+    
+    print(f"Requesting rate: {from_currency} -> {to_currency} for {date}")
+    
     try:
-        print(f"Requesting rate: {from_currency} -> {to_currency} for {date}")
-        
-        response = requests.post(
-            f"{BASE_URL}/?from={from_currency}&to={to_currency}&date={date}",
-            data={"key": API_KEY},
-            timeout=10
-        )
-        
+        response = requests.post(api_url, data=payload, timeout=10)
         response.raise_for_status()
-        data = response.json()
         
-        if data.get('error'):
-            error_msg = f"API Error: {data['error']}"
+        response_data = response.json()
+        
+        # Проверка ошибок API
+        if response_data.get('error'):
+            error_message = response_data['error']
+            logging.error(f"API Error for {from_currency}->{to_currency} on {date}: {error_message}")
+            print(f"[ERROR] API Error: {error_message}")
+            return False
+        
+        # Извлечение данных
+        rate_data = response_data.get('data', {})
+        exchange_rate = rate_data.get('rate')
+        
+        if exchange_rate is None:
+            error_msg = "No exchange rate data received from API"
             logging.error(error_msg)
-            raise Exception(error_msg)
-            
-        return data
+            print(f"[ERROR] {error_msg}")
+            return False
         
-    except requests.exceptions.ConnectionError:
-        error_msg = "Cannot connect to API. Make sure Docker container is running on localhost:8080"
-        logging.error(error_msg)
-        raise Exception(error_msg)
-    except requests.exceptions.Timeout:
-        error_msg = "API request timed out"
-        logging.error(error_msg)
-        raise Exception(error_msg)
+        # Вывод результата
+        print(f"\n=== Exchange Rate ===")
+        print(f"From: {from_currency}")
+        print(f"To: {to_currency}")
+        print(f"Date: {date}")
+        print(f"Rate: {exchange_rate}")
+        
+        # Сохранение данных
+        save_to_file(rate_data, from_currency, to_currency, date)
+        return True
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Network error: {e}"
+        logging.error(f"Network error for {from_currency}->{to_currency} on {date}: {e}")
+        print(f"[ERROR] {error_msg}")
+        return False
+    except json.JSONDecodeError as e:
+        error_msg = f"Invalid JSON response: {e}"
+        logging.error(f"JSON decode error for {from_currency}->{to_currency} on {date}: {e}")
+        print(f"[ERROR] {error_msg}")
+        return False
     except Exception as e:
-        error_msg = f"Request failed: {e}"
-        logging.error(error_msg)
-        raise Exception(error_msg)
+        error_msg = f"Unexpected error: {e}"
+        logging.error(f"Unexpected error for {from_currency}->{to_currency} on {date}: {e}")
+        print(f"[ERROR] {error_msg}")
+        return False
+
 
 def save_to_file(data, from_currency, to_currency, date):
-    """Save data to JSON file"""
-    filename = f"data/{from_currency}_{to_currency}_{date}.json"
+    """Сохранение данных в JSON файл"""
+    # Создание директории, если не существует
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
+        print(f"[INFO] Created directory: {DATA_DIR}")
+    
+    # Формирование имени файла
+    filename = f"{from_currency}_{to_currency}_{date}.json"
+    filepath = os.path.join(DATA_DIR, filename)
     
     try:
-        with open(filename, 'w', encoding='utf-8') as f:
+        with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        print(f"[SUCCESS] Data saved to: {filename}")
-        return filename
-    except IOError as e:
-        error_msg = f"Error saving file: {e}"
+        print(f"[SUCCESS] Data saved to: {filepath}")
+    except Exception as e:
+        error_msg = f"Failed to save file {filepath}: {e}"
         logging.error(error_msg)
-        raise Exception(error_msg)
+        print(f"[ERROR] {error_msg}")
+
+
+def get_supported_currencies():
+    """Получение списка поддерживаемых валют от API"""
+    api_url = f"{API_BASE_URL}?currencies"
+    payload = {"key": API_KEY}
+    
+    try:
+        response = requests.post(api_url, data=payload, timeout=10)
+        response.raise_for_status()
+        response_data = response.json()
+        
+        if response_data.get('error'):
+            print(f"[WARNING] Could not fetch currencies from API: {response_data['error']}")
+            return SUPPORTED_CURRENCIES
+        
+        return response_data.get('data', SUPPORTED_CURRENCIES)
+    except:
+        print(f"[WARNING] Could not fetch currencies from API, using default list")
+        return SUPPORTED_CURRENCIES
+
 
 def main():
-    """Main function"""
-    print("=== Currency Exchange Rate Script ===")
+    """Основная функция"""
+    # Настройка логирования в САМОМ НАЧАЛЕ
+    setup_logging()
     
-    parser = argparse.ArgumentParser(
-        description='Get currency exchange rates for specified date (2025-01-01 to 2025-09-15)',
-        epilog='Example: python currency_exchange_rate.py USD EUR 2025-01-01'
-    )
+    # Получение актуального списка валют
+    global SUPPORTED_CURRENCIES
+    SUPPORTED_CURRENCIES = get_supported_currencies()
     
-    parser.add_argument(
-        'from_currency',
-        type=str.upper,
-        help='Source currency code (USD, EUR, MDL, RON, RUS, UAH)'
-    )
-    
-    parser.add_argument(
-        'to_currency', 
-        type=str.upper,
-        help='Target currency code (USD, EUR, MDL, RON, RUS, UAH)'
-    )
-    
-    parser.add_argument(
-        'date',
-        type=validate_date,
-        help='Date in YYYY-MM-DD format (between 2025-01-01 and 2025-09-15)'
-    )
-    
-    try:
-        args = parser.parse_args()
-        
-        # Validate currencies
-        validate_currencies(args.from_currency, args.to_currency)
-        
-        print(f"Parameters: {args.from_currency} -> {args.to_currency} on {args.date}")
-        
-        # Setup
-        setup_logging()
-        create_data_directory()
-        
-        # Get exchange rate
-        exchange_data = get_exchange_rate(args.from_currency, args.to_currency, args.date)
-        
-        # Display results
-        if 'data' in exchange_data:
-            rate_data = exchange_data['data']
-            print(f"\n=== Exchange Rate ===")
-            print(f"From: {args.from_currency}")
-            print(f"To: {args.to_currency}")
-            print(f"Date: {rate_data.get('date', 'N/A')}")
-            print(f"Rate: {rate_data.get('rate', 'N/A')}")
-        
-        # Save to file
-        filename = save_to_file(exchange_data, args.from_currency, args.to_currency, args.date)
-        
-        print(f"\n[SUCCESS] Operation completed successfully!")
-        
-    except Exception as e:
-        print(f"\n[ERROR] {e}")
+    # Проверка аргументов командной строки
+    if len(sys.argv) != 4:
+        error_msg = "Usage: python currency_exchange_rate.py FROM_CURRENCY TO_CURRENCY DATE\n" \
+                   "Example: python currency_exchange_rate.py USD EUR 2025-01-01"
+        logging.error(error_msg)
+        print(f"[ERROR] {error_msg}")
         sys.exit(1)
+    
+    from_currency = sys.argv[1].upper()
+    to_currency = sys.argv[2].upper()
+    date = sys.argv[3]
+    
+    print(f"=== Currency Exchange Rate Script ===")
+    print(f"Parameters: {from_currency} -> {to_currency} on {date}")
+    print(f"Supported currencies: {', '.join(SUPPORTED_CURRENCIES)}\n")
+    
+    # Валидация параметров
+    if not validate_currencies(from_currency, to_currency):
+        sys.exit(1)
+    
+    if not validate_date(date):
+        sys.exit(1)
+    
+    # Получение курса валют
+    success = get_exchange_rate(from_currency, to_currency, date)
+    
+    if success:
+        print(f"\n[SUCCESS] Operation completed successfully!")
+    else:
+        print(f"\n[FAILED] Operation failed. Check error.log for details.")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
