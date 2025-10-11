@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 
 
 # Конфигурация
-API_BASE_URL = "http://localhost:8080/"
+API_BASE_URL = "http://host.docker.internal:8080/"
 API_KEY = "myapi123"
 SUPPORTED_CURRENCIES = ["MDL", "USD", "EUR", "RON", "RUS", "UAH"]
 DATA_DIR = "data"
